@@ -3,11 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gina's Math-Base: Ultimate</title>
+    <title>Minou's Math-Base: MathJax Edition</title>
     
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']], // Erlaubt $...$ für Formeln im Text
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                renderActions: {
+                    addMenu: [] // Entfernt das MathJax-Kontextmenü für saubereres UI
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,240 +28,67 @@
     <style>
         :root {
             --bg-color: #f0f2f5; --card-bg: #ffffff; --primary: #6366f1; --accent: #ec4899;
-            --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --locked: #94a3b8;
-            --text-dark: #1e293b; --text-light: #64748b;
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --text-dark: #1e293b; --text-light: #64748b;
         }
-
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-dark); margin: 0; padding: 20px; display: flex; justify-content: center; }
         .container { max-width: 950px; width: 100%; display: flex; flex-direction: column; gap: 25px; }
-
-        /* HEADER */
         .top-section { display: grid; grid-template-columns: 1fr 1.2fr; gap: 25px; background: var(--card-bg); padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .chart-wrapper { position: relative; height: 320px; width: 100%; display: flex; justify-content: center; align-items: center; }
-        .stats-wrapper { display: flex; flex-direction: column; justify-content: center; padding-left: 10px; }
-        
         .user-name { font-size: 2.5rem; font-weight: 700; margin: 0; background: linear-gradient(120deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .total-score { font-size: 2rem; font-weight: 600; margin-bottom: 15px; }
-        .stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-        .highlight-pill { background: #f1f5f9; padding: 4px 12px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; border: 1px solid #e2e8f0; }
-
-        /* THEMEN KARTEN */
         .category-card { background: var(--card-bg); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 15px; border: 1px solid #f1f5f9; }
-        .category-header { padding: 18px 25px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
-        .category-header:hover { background: #f1f5f9; }
-        .cat-title { font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
-        
-        .category-content { padding: 0 25px; max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out, padding 0.3s ease; background: white; }
+        .category-header { padding: 18px 25px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .category-content { padding: 0 25px; max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; background: white; }
         .category-content.open { padding: 25px; max-height: 3000px; border-top: 1px solid #e2e8f0; }
-
-        .subtopic { margin-bottom: 30px; }
-        .subtopic h3 { margin: 0 0 12px 0; font-size: 0.95rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; }
-        
-        /* PILLS */
         .pill-container { display: flex; flex-wrap: wrap; gap: 8px; }
-        .pill { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 6px; cursor: not-allowed; border: 1px solid transparent; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .pill.active { cursor: pointer; }
-        .pill.active:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-
-        .pill-green { background-color: #dcfce7; color: #15803d; border-color: #86efac; }
-        .pill-gray { background-color: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
-
-        /* MODAL */
+        .pill { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; cursor: not-allowed; border: 1px solid #e2e8f0; background: #f1f5f9; color: #94a3b8; }
+        .pill.active { cursor: pointer; background-color: #dcfce7; color: #15803d; border-color: #86efac; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: var(--card-bg); width: 90%; max-width: 600px; border-radius: 20px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); position: relative; max-height: 85vh; overflow-y: auto; }
-        .close-btn { position: absolute; top: 20px; right: 20px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-weight: bold; color: var(--text-light); cursor: pointer; transition: 0.2s; }
-        .close-btn:hover { background: #e2e8f0; color: var(--text-dark); }
-        
-        .task-badge { background: #e0e7ff; color: var(--primary); padding: 4px 12px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; display: inline-block; margin-bottom: 15px; }
-        .task-raw { font-size: 1.1rem; line-height: 1.6; font-weight: 500; margin-bottom: 25px; color: var(--text-dark); background: #f8fafc; padding: 15px; border-radius: 12px; border-left: 4px solid var(--primary); }
-        .solution-step { background: white; border: 1px solid #e2e8f0; padding: 12px 16px; margin-bottom: 10px; border-radius: 10px; font-size: 0.95rem; color: var(--text-dark); display: flex; gap: 10px; }
+        .task-raw { font-size: 1.1rem; line-height: 1.6; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 12px; border-left: 4px solid var(--primary); }
+        .solution-step { background: white; border: 1px solid #e2e8f0; padding: 12px 16px; margin-bottom: 10px; border-radius: 10px; display: flex; gap: 10px; }
         .step-number { font-weight: 700; color: var(--accent); }
-
-        @media (max-width: 768px) { .top-section { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="top-section">
-        <div class="chart-wrapper">
-            <canvas id="skillRadar"></canvas>
-        </div>
+        <div class="chart-wrapper"><canvas id="skillRadar"></canvas></div>
         <div class="stats-wrapper">
             <h1 class="user-name">Minous Progress</h1>
-            <div class="total-score">Verfügbare Aufgaben: <span id="stat-count">0</span></div>
-            <div class="stat-row">
-                <span>🔄 System Status:</span>
-                <span class="highlight-pill" id="connection-status">Verbinde...</span>
-            </div>
+            <div class="total-score">Aufgaben: <span id="stat-count">0</span></div>
+            <div id="connection-status" style="font-weight: 600;">Verbinde...</div>
         </div>
     </div>
 
     <div class="category-card">
         <div class="category-header" onclick="toggleCat(this)">
-            <div class="cat-title">🧮 Basics & Algebra</div>
-            <div class="cat-score">Klick mich ▼</div>
+            <div style="font-weight:700;">🧮 Basics & Algebra</div>
+            <div>▼</div>
         </div>
         <div class="category-content open">
-            <div class="subtopic">
-                <h3>Zahlen & Operationen</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="1">Grundrechenarten</div>
-                    <div class="pill pill-gray" data-id="2">Runden & Schätzen</div>
-                    <div class="pill pill-gray" data-id="3">Teilbarkeit (ggT/kgV)</div>
-                    <div class="pill pill-gray" data-id="5">Größen (Geld, Zeit)</div>
-                    <div class="pill pill-gray" data-id="4">Potenzen (Einführung)</div>
-                </div>
-            </div>
-            <div class="subtopic">
-                <h3>Brüche & Dezimalzahlen</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="6">Erweitern & Kürzen</div>
-                    <div class="pill pill-gray" data-id="7">Rechnen mit Brüchen</div>
-                    <div class="pill pill-gray" data-id="8">Negative Zahlen (ℤ)</div>
-                </div>
-            </div>
-             <div class="subtopic">
-                <h3>Prozent & Zins</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="9">Grundwert / Prozentwert</div>
-                    <div class="pill pill-gray" data-id="10">Zinseszins</div>
-                </div>
-            </div>
-            <div class="subtopic">
-                <h3>Terme & Gleichungen</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="11">Ausklammern & Multipl.</div>
-                    <div class="pill pill-gray" data-id="12">Binomische Formeln</div>
-                    <div class="pill pill-gray" data-id="13">Lineare Gleichungen</div>
-                    <div class="pill pill-gray" data-id="14">Wurzeln & Irrationalität</div>
-                    <div class="pill pill-gray" data-id="15">Potenzgesetze</div>
-                </div>
+            <div class="pill-container">
+                <div class="pill" data-id="1">Grundrechenarten</div>
+                <div class="pill" data-id="9">Prozentrechnung</div>
+                <div class="pill" data-id="12">Binomische Formeln</div>
+                <div class="pill" data-id="13">Gleichungen</div>
             </div>
         </div>
     </div>
-
-    <div class="category-card">
-        <div class="category-header" onclick="toggleCat(this)">
-            <div class="cat-title">📈 Funktionen & Analysis</div>
-            <div class="cat-score">Klick mich ▼</div>
-        </div>
-        <div class="category-content"> 
-            <div class="subtopic">
-                <h3>Lineare Funktionen</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="16">Proportionale Zuordnung</div>
-                    <div class="pill pill-gray" data-id="17">Lineare Fkt (Steigung)</div>
-                </div>
-            </div>
-            <div class="subtopic">
-                <h3>Quadratische & Wachstumsfkt.</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="18">Scheitelpunktform</div>
-                    <div class="pill pill-gray" data-id="19">PQ-Formel / Mitternacht</div>
-                    <div class="pill pill-gray" data-id="20">Exponentielles Wachstum</div>
-                    <div class="pill pill-gray" data-id="21">Logarithmus Grundlagen</div>
-                </div>
-            </div>
-            <div class="subtopic">
-                <h3>Differentialrechnung (Oberstufe)</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="22">Ableitungsregeln</div>
-                    <div class="pill pill-gray" data-id="23">Kurvendiskussion (HP/TP)</div>
-                    <div class="pill pill-gray" data-id="24">Extremwertaufgaben</div>
-                    <div class="pill pill-gray" data-id="25">Produkt- & Kettenregel</div>
-                    <div class="pill pill-gray" data-id="26">e-Funktionen</div>
-                    <div class="pill pill-gray" data-id="27">Logarithmusfunktionen</div>
-                </div>
-            </div>
-             <div class="subtopic">
-                <h3>Integralrechnung (Oberstufe)</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="28">Stammfunktionen</div>
-                    <div class="pill pill-gray" data-id="29">Flächenberechnung</div>
-                    <div class="pill pill-gray" data-id="30">Rotationskörper</div>
-                </div>
-            </div>
-        </div>
     </div>
-
-    <div class="category-card">
-        <div class="category-header" onclick="toggleCat(this)">
-            <div class="cat-title">📐 Geometrie</div>
-            <div class="cat-score">Klick mich ▼</div>
-        </div>
-        <div class="category-content">
-            <div class="subtopic">
-                <h3>Ebene Geometrie</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="31">Winkel messen</div>
-                    <div class="pill pill-gray" data-id="32">Symmetrie</div>
-                    <div class="pill pill-gray" data-id="33">Flächen (Rechteck/Q)</div>
-                    <div class="pill pill-gray" data-id="34">Winkelsätze Dreieck</div>
-                    <div class="pill pill-gray" data-id="35">Konstruktion & Kongruenz</div>
-                    <div class="pill pill-gray" data-id="36">Satz des Thales</div>
-                </div>
-            </div>
-            <div class="subtopic">
-                <h3>Trigonometrie & Raum</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="37">Satz des Pythagoras</div>
-                    <div class="pill pill-gray" data-id="38">Sinus, Cosinus, Tangens</div>
-                    <div class="pill pill-gray" data-id="39">Sinus-/Kosinussatz</div>
-                    <div class="pill pill-gray" data-id="40">Körper (Volumen/Oberfl.)</div>
-                </div>
-            </div>
-            <div class="subtopic">
-                <h3>Vektorrechnung (Oberstufe)</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="41">Vektoren Basics</div>
-                    <div class="pill pill-gray" data-id="42">Geraden im Raum</div>
-                    <div class="pill pill-gray" data-id="43">Ebenen im Raum</div>
-                    <div class="pill pill-gray" data-id="44">Lagebeziehungen</div>
-                    <div class="pill pill-gray" data-id="45">Skalarprodukt</div>
-                    <div class="pill pill-gray" data-id="46">Vektorprodukt (Kreuz)</div>
-                    <div class="pill pill-gray" data-id="47">Abstandsberechnungen</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="category-card">
-        <div class="category-header" onclick="toggleCat(this)">
-            <div class="cat-title">🎲 Stochastik</div>
-            <div class="cat-score">Klick mich ▼</div>
-        </div>
-        <div class="category-content">
-            <div class="subtopic">
-                <h3>Grundlagen</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="48">Laplace-Wahrscheinlichkeit</div>
-                    <div class="pill pill-gray" data-id="49">Baumdiagramme</div>
-                    <div class="pill pill-gray" data-id="50">Vierfeldertafel</div>
-                </div>
-            </div>
-            <div class="subtopic">
-                <h3>Statistik (Oberstufe)</h3>
-                <div class="pill-container">
-                    <div class="pill pill-gray" data-id="51">Bernoulli & Binomial</div>
-                    <div class="pill pill-gray" data-id="52">Hypothesentests</div>
-                    <div class="pill pill-gray" data-id="53">Normalverteilung</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="modal-overlay" id="taskModal" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <button class="close-btn" onclick="closeModal(event, true)">✕</button>
-        <div class="task-badge" id="modal-topic-badge">Thema ID: X</div>
-        <div class="task-raw" id="modal-task-text">Lade Aufgabe...</div>
-        
-        <h3 style="font-size: 1rem; color: var(--text-light); margin-bottom: 15px;">Lösungsschritte:</h3>
+        <button onclick="closeModal(event, true)" style="float:right; cursor:pointer;">✕</button>
+        <div id="modal-topic-badge" style="color:var(--primary); font-weight:700; margin-bottom:10px;"></div>
+        <div class="task-raw" id="modal-task-text"></div>
+        <h3>Lösungsschritte:</h3>
         <div id="modal-solution-steps"></div>
     </div>
 </div>
+
+
 
 <script>
     const N8N_WEBHOOK_STATS = 'https://steven.agentur-genrich.de/webhook/get-topic-stats'; 
@@ -257,130 +97,75 @@
     let skillChart;
 
     async function initDashboard() {
-        const statusSpan = document.getElementById('connection-status');
         try {
             const response = await fetch(N8N_WEBHOOK_STATS);
             const topicStats = await response.json(); 
-            
-            let totalTasks = 0;
+            let total = 0;
             let radarData = { algebra: 0, funktionen: 0, geometrie: 0, stochastik: 0 };
 
             document.querySelectorAll('.pill').forEach(pill => {
                 const id = parseInt(pill.getAttribute('data-id'));
                 const count = topicStats[id] || 0;
-                
                 pill.innerHTML = `${pill.innerText} (${count})`;
-                totalTasks += count;
-
+                total += count;
                 if (count > 0) {
-                    pill.classList.remove('pill-gray');
-                    pill.classList.add('pill-green', 'active');
-                    pill.onclick = () => openTaskModal(id, pill.innerText.replace(/ \(\d+\)$/, ''));
-
-                    // Radar Zuordnung
-                    if (id >= 1 && id <= 15) radarData.algebra += count;
-                    else if (id >= 16 && id <= 30) radarData.funktionen += count;
-                    else if (id >= 31 && id <= 47) radarData.geometrie += count;
-                    else if (id >= 48 && id <= 53) radarData.stochastik += count;
+                    pill.classList.add('active');
+                    pill.onclick = () => openTaskModal(id, pill.innerText.split(' (')[0]);
+                    if (id <= 15) radarData.algebra += count;
+                    else if (id <= 30) radarData.funktionen += count;
+                    else if (id <= 47) radarData.geometrie += count;
+                    else radarData.stochastik += count;
                 }
             });
-
-            document.getElementById('stat-count').innerText = totalTasks;
-            updateSkillRadar(radarData);
-            statusSpan.innerHTML = `✅ n8n Verbunden`;
-            statusSpan.style.color = "var(--success)";
-
-        } catch (err) {
-            console.error(err);
-            statusSpan.innerText = "❌ n8n Verbindungsfehler";
-            statusSpan.style.color = "var(--danger)";
-        }
-    }
-
-    function updateSkillRadar(data) {
-        const ctx = document.getElementById('skillRadar');
-        if (skillChart) skillChart.destroy();
-        skillChart = new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: ['Algebra', 'Funktionen', 'Geometrie', 'Stochastik'],
-                datasets: [{
-                    label: 'Gelöste Aufgaben',
-                    data: [data.algebra, data.funktionen, data.geometrie, data.stochastik],
-                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                    borderColor: '#6366f1',
-                    pointBackgroundColor: '#ec4899',
-                    borderWidth: 2
-                }]
-            },
-            options: { scales: { r: { beginAtZero: true, suggestedMax: 5, ticks: { display: false } } }, plugins: { legend: { display: false } } }
-        });
+            document.getElementById('stat-count').innerText = total;
+            document.getElementById('connection-status').innerText = "✅ n8n Aktiv";
+            updateRadar(radarData);
+        } catch (e) { document.getElementById('connection-status').innerText = "❌ n8n Fehler"; }
     }
 
     async function openTaskModal(topicId, topicName) {
         const modal = document.getElementById('taskModal');
-        const textContainer = document.getElementById('modal-task-text');
-        const stepsContainer = document.getElementById('modal-solution-steps');
-        
-        document.getElementById('modal-topic-badge').innerText = topicName;
-        textContainer.innerHTML = "Wird geladen...";
-        stepsContainer.innerHTML = "";
         modal.style.display = 'flex';
+        document.getElementById('modal-topic-badge').innerText = topicName;
+        document.getElementById('modal-task-text').innerHTML = "Lade...";
+        document.getElementById('modal-solution-steps').innerHTML = "";
 
         try {
             const res = await fetch(`${N8N_WEBHOOK_TASK}?topicId=${topicId}`);
-            const taskData = await res.json();
+            const data = await res.json();
             
-            if(taskData.task_raw) {
-                // Rohdaten einfügen
-                textContainer.innerHTML = taskData.task_raw;
-                
-                let stepsArray = [];
-                if(typeof taskData.solution_steps === 'string') {
-                    try { stepsArray = JSON.parse(taskData.solution_steps); } 
-                    catch(e) { stepsArray = [taskData.solution_steps]; }
-                } else {
-                    stepsArray = taskData.solution_steps || [];
-                }
+            document.getElementById('modal-task-text').innerHTML = data.task_raw;
+            let steps = Array.isArray(data.solution_steps) ? data.solution_steps : JSON.parse(data.solution_steps);
+            
+            let html = '';
+            steps.forEach((s, i) => {
+                html += `<div class="solution-step"><b class="step-number">${i+1}.</b> <span>${s}</span></div>`;
+            });
+            document.getElementById('modal-solution-steps').innerHTML = html;
 
-                let stepsHtml = '';
-                stepsArray.forEach((step, index) => {
-                    stepsHtml += `
-                    <div class="solution-step">
-                        <span class="step-number">${index + 1}.</span>
-                        <span>${step}</span>
-                    </div>`;
-                });
-                stepsContainer.innerHTML = stepsHtml || "<em>Keine Schritte hinterlegt.</em>";
-
-                // LaTeX Rendering triggern
-                if (window.renderMathInElement) {
-                    renderMathInElement(modal, {
-                        delimiters: [
-                            {left: "$", right: "$", display: false},
-                            {left: "$$", right: "$$", display: true}
-                        ],
-                        throwOnError: false
-                    });
-                }
-            } else {
-                textContainer.innerHTML = "Keine Aufgabe gefunden.";
+            // MathJax Rendering triggern
+            if (window.MathJax) {
+                MathJax.typesetPromise([modal]);
             }
-        } catch (err) {
-            textContainer.innerHTML = "Fehler beim Laden der Aufgabe.";
-        }
+        } catch (e) { document.getElementById('modal-task-text').innerText = "Fehler beim Laden."; }
     }
 
-    function closeModal(event, force = false) {
-        if (force || event.target.id === 'taskModal') {
-            document.getElementById('taskModal').style.display = 'none';
-        }
+    function updateRadar(d) {
+        if (skillChart) skillChart.destroy();
+        skillChart = new Chart(document.getElementById('skillRadar'), {
+            type: 'radar',
+            data: {
+                labels: ['Algebra', 'Funktionen', 'Geometrie', 'Stochastik'],
+                datasets: [{ data: [d.algebra, d.funktionen, d.geometrie, d.stochastik], backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: '#6366f1' }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
     }
 
-    function toggleCat(header) { header.nextElementSibling.classList.toggle('open'); }
+    function toggleCat(h) { h.nextElementSibling.classList.toggle('open'); }
+    function closeModal(e, f) { if(f || e.target.id === 'taskModal') document.getElementById('taskModal').style.display='none'; }
     
-    initDashboard(); 
+    initDashboard();
 </script>
-
 </body>
 </html>
