@@ -269,7 +269,7 @@
                 const id = parseInt(pill.getAttribute('data-id'));
                 const count = topicStats[id] || 0;
                 
-                pill.innerHTML = `${pill.innerHTML} (${count})`;
+                pill.innerHTML = `${pill.innerText} (${count})`;
                 totalTasks += count;
 
                 if (count > 0) {
