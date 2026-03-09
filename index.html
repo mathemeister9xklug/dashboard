@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gina's Math-Base: Ultimate</title>
     
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -49,7 +53,7 @@
         .pill-green { background-color: #dcfce7; color: #15803d; border-color: #86efac; }
         .pill-gray { background-color: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
 
-        /* MODAL (AUFGABEN-VIEW) */
+        /* MODAL */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: var(--card-bg); width: 90%; max-width: 600px; border-radius: 20px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); position: relative; max-height: 85vh; overflow-y: auto; }
         .close-btn { position: absolute; top: 20px; right: 20px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-weight: bold; color: var(--text-light); cursor: pointer; transition: 0.2s; }
@@ -75,7 +79,7 @@
             <div class="total-score">Verfügbare Aufgaben: <span id="stat-count">0</span></div>
             <div class="stat-row">
                 <span>🔄 System Status:</span>
-                <span class="highlight-pill" id="connection-status">Lade n8n Daten...</span>
+                <span class="highlight-pill" id="connection-status">Verbinde...</span>
             </div>
         </div>
     </div>
@@ -242,30 +246,27 @@
         <div class="task-raw" id="modal-task-text">Lade Aufgabe...</div>
         
         <h3 style="font-size: 1rem; color: var(--text-light); margin-bottom: 15px;">Lösungsschritte:</h3>
-        <div id="modal-solution-steps">
-            </div>
+        <div id="modal-solution-steps"></div>
     </div>
 </div>
 
 <script>
-    // ===============================================
-    // KONFIGURATION (Deine n8n Webhook URLs)
-    // ===============================================
     const N8N_WEBHOOK_STATS = 'https://steven.agentur-genrich.de/webhook/get-topic-stats'; 
     const N8N_WEBHOOK_TASK = 'https://steven.agentur-genrich.de/webhook/get-exercises'; 
+    
+    let skillChart;
 
     async function initDashboard() {
         const statusSpan = document.getElementById('connection-status');
-        
         try {
-            // Holt die Statistiken aus n8n ({"12": 5, "48": 8, "40": 2})
             const response = await fetch(N8N_WEBHOOK_STATS);
             const topicStats = await response.json(); 
             
             let totalTasks = 0;
+            let radarData = { algebra: 0, funktionen: 0, geometrie: 0, stochastik: 0 };
 
             document.querySelectorAll('.pill').forEach(pill => {
-                const id = pill.getAttribute('data-id');
+                const id = parseInt(pill.getAttribute('data-id'));
                 const count = topicStats[id] || 0;
                 
                 pill.innerHTML = `${pill.innerHTML} (${count})`;
@@ -274,13 +275,18 @@
                 if (count > 0) {
                     pill.classList.remove('pill-gray');
                     pill.classList.add('pill-green', 'active');
-                    
-                    // Bei Klick: Modal öffnen
                     pill.onclick = () => openTaskModal(id, pill.innerText.replace(/ \(\d+\)$/, ''));
+
+                    // Radar Zuordnung
+                    if (id >= 1 && id <= 15) radarData.algebra += count;
+                    else if (id >= 16 && id <= 30) radarData.funktionen += count;
+                    else if (id >= 31 && id <= 47) radarData.geometrie += count;
+                    else if (id >= 48 && id <= 53) radarData.stochastik += count;
                 }
             });
 
             document.getElementById('stat-count').innerText = totalTasks;
+            updateSkillRadar(radarData);
             statusSpan.innerHTML = `✅ n8n Verbunden`;
             statusSpan.style.color = "var(--success)";
 
@@ -291,27 +297,45 @@
         }
     }
 
+    function updateSkillRadar(data) {
+        const ctx = document.getElementById('skillRadar');
+        if (skillChart) skillChart.destroy();
+        skillChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Algebra', 'Funktionen', 'Geometrie', 'Stochastik'],
+                datasets: [{
+                    label: 'Gelöste Aufgaben',
+                    data: [data.algebra, data.funktionen, data.geometrie, data.stochastik],
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: '#6366f1',
+                    pointBackgroundColor: '#ec4899',
+                    borderWidth: 2
+                }]
+            },
+            options: { scales: { r: { beginAtZero: true, suggestedMax: 5, ticks: { display: false } } }, plugins: { legend: { display: false } } }
+        });
+    }
+
     async function openTaskModal(topicId, topicName) {
         const modal = document.getElementById('taskModal');
         const textContainer = document.getElementById('modal-task-text');
         const stepsContainer = document.getElementById('modal-solution-steps');
         
         document.getElementById('modal-topic-badge').innerText = topicName;
-        textContainer.innerText = "Wird geladen...";
+        textContainer.innerHTML = "Wird geladen...";
         stepsContainer.innerHTML = "";
         modal.style.display = 'flex';
 
         try {
-            // Holt die Aufgabe über den n8n Webhook
             const res = await fetch(`${N8N_WEBHOOK_TASK}?topicId=${topicId}`);
             const taskData = await res.json();
             
             if(taskData.task_raw) {
-                textContainer.innerText = taskData.task_raw;
+                // Rohdaten einfügen
+                textContainer.innerHTML = taskData.task_raw;
                 
-                let stepsHtml = '';
                 let stepsArray = [];
-                
                 if(typeof taskData.solution_steps === 'string') {
                     try { stepsArray = JSON.parse(taskData.solution_steps); } 
                     catch(e) { stepsArray = [taskData.solution_steps]; }
@@ -319,21 +343,31 @@
                     stepsArray = taskData.solution_steps || [];
                 }
 
+                let stepsHtml = '';
                 stepsArray.forEach((step, index) => {
                     stepsHtml += `
                     <div class="solution-step">
                         <span class="step-number">${index + 1}.</span>
-                        <span>${step.replace(/\*\*/g, '')}</span>
+                        <span>${step}</span>
                     </div>`;
                 });
-                
-                stepsContainer.innerHTML = stepsHtml || "<em>Keine spezifischen Schritte hinterlegt.</em>";
-            } else {
-                textContainer.innerText = "Keine Aufgabe gefunden.";
-            }
+                stepsContainer.innerHTML = stepsHtml || "<em>Keine Schritte hinterlegt.</em>";
 
+                // LaTeX Rendering triggern
+                if (window.renderMathInElement) {
+                    renderMathInElement(modal, {
+                        delimiters: [
+                            {left: "$", right: "$", display: false},
+                            {left: "$$", right: "$$", display: true}
+                        ],
+                        throwOnError: false
+                    });
+                }
+            } else {
+                textContainer.innerHTML = "Keine Aufgabe gefunden.";
+            }
         } catch (err) {
-            textContainer.innerText = "Fehler beim Laden der Aufgabe.";
+            textContainer.innerHTML = "Fehler beim Laden der Aufgabe.";
         }
     }
 
@@ -345,20 +379,8 @@
 
     function toggleCat(header) { header.nextElementSibling.classList.toggle('open'); }
     
-    // Starte den Datenabruf, sobald die Seite geladen wird
     initDashboard(); 
-
-    // Chart Dummy
-    new Chart(document.getElementById('skillRadar'), {
-        type: 'radar',
-        data: {
-            labels: ['Algebra', 'Funktionen', 'Geometrie', 'Stochastik'],
-            datasets: [{ label: 'Skill', data: [80, 40, 70, 90], backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: '#6366f1', pointBackgroundColor: '#ec4899' }]
-        },
-        options: { scales: { r: { ticks: { display: false } } } }
-    });
 </script>
 
 </body>
 </html>
-
